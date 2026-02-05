@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>George KPIs Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background-color: #0078d4;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        
+		.header img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto 10px auto;
+        }
+        
+		.container {
+            padding: 10px;
+        }
+        
+        .chart-frame {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+            display: block;
+        }
+        
+        .controls {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        button {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:active {
+            background-color: #106ebe;
+        }
+        
+        .info {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>George KPIs Dashboard</h2>
+    </iframe>
+    </div>
+  
+    <button onclick="addRecord()">Arrived at H.I.S. service</button>
+    <div id="message"></div>
+
+    <script>
+        async function addRecord() {
+            document.getElementById('message').textContent = 'Adding record...';
+            
+            const response = await fetch('https://default846521e158fa45d6966500118b67a0.d1.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2aa7ac6083c8462e9a126c414326fc14/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=_letBG9jOnb0mX-zQ4XPDlfBM_uskmgPndkgVOSWC4c', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({})
+            });
+            
+            if (response.ok) {
+                document.getElementById('message').textContent = '✓ Record added at ' + new Date().toLocaleString();
+            } else {
+                document.getElementById('message').textContent = '✗ Error adding record';
+            }
+        }
+    </script>
+ 
+    <div class="container">
+        <div class="chart-frame">
+            <iframe id="excelFrame" 
+                    src="https://linguafranca.sharepoint.com/:x:/s/GeorgeSite/IQANSfoK8dWmTbLZXLbBOA-PAeaTGSziXydG8p4hH7WSE-E?&action=embedview&wdAllowInteractivity=False&Item='Interface'!A1%3AE12&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True&wdEmbedCode=0&edaebf=rslc0"
+                    allowfullscreen>
+            </iframe>
+        </div>
+        
+        <div class="controls">
+            <button onclick="refreshChart()">🔄 Refresh</button>
+            <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+        </div>
+        
+        <div class="info">
+            Last refreshed: <span id="lastUpdate">Page load</span>
+        </div>
+    </div>
+
+    <script>
+        // Refresh the chart
+        function refreshChart() {
+            const iframe = document.getElementById('excelFrame');
+            const src = iframe.src;
+            iframe.src = '';
+            setTimeout(() => {
+                iframe.src = src;
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            }, 100);
+        }
+        
+        // Toggle fullscreen for the chart
+        function toggleFullscreen() {
+            const frame = document.querySelector('.chart-frame');
+            if (!document.fullscreenElement) {
+                frame.requestFullscreen().catch(err => {
+                    alert('Error attempting to enable fullscreen: ' + err.message);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // Auto-refresh every 5 minutes (optional)
+        // Uncomment the line below if you want auto-refresh
+        // setInterval(refreshChart, 300000);
+        
+        // Set initial load time
+        window.onload = function() {
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        };
+    </script>
+</body>
+</html>
