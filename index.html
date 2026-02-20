@@ -220,7 +220,7 @@
                            required>
                 </div>
                 
-                <button type="submit">Login</button>
+                <button type="submit" id="loginButton">Login</button>
             </form>
             
             <div class="login-info">
@@ -239,7 +239,7 @@
         <div class="container">
             <div class="chart-frame">
                 <iframe id="excelFrame" 
-                        src="https://linguafranca.sharepoint.com/:x:/s/GeorgeSite/IQANSfoK8dWmTbLZXLbBOA-PAeaTGSziXydG8p4hH7WSE-E?&action=embedview&wdAllowInteractivity=False&Item='Interface'!A1%3AE12&wdHideGridlines=True&wdInConfigurator=True&wdInConfigurator=True&wdEmbedCode=0&edaebf=rslc0"
+                        src=""
                         allowfullscreen>
                 </iframe>
             </div>
@@ -260,129 +260,241 @@
     </div>
 
     <script>
-        // Configuration
-        const FLOW_URL = 'https://default846521e158fa45d6966500118b67a0.d1.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/2aa7ac6083c8462e9a126c414326fc14/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=_letBG9jOnb0mX-zQ4XPDlfBM_uskmgPndkgVOSWC4c';
-        const SESSION_KEY = 'Pa55w0rd!';
+    const AUTH_FLOW_URL = 'https://default846521e158fa45d6966500118b67a0.d1.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f15cad7bd122454792db84e5e3be20b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XDXpkI4sgaNoAALz_CGB-4nQSkcA8D7LqWE-rfwS3gw'    // Configuration - ONLY the authentication flow URL is visible in source code
+    
+    // Session storage keys
+    const SESSION_KEY = 'kpi_session_key';
+    const RECORD_URL_KEY = 'kpi_record_url';
+    
+    // Hardcoded URLs that don't need to be hidden
+    //const EXCEL_URL = 'YOUR_EXCEL_EMBED_URL_HERE';
+    const IMAGE_URL = 'YOUR_IMAGE_URL_HERE';
+    
+    // Check if already authenticated on page load
+    window.onload = function() {
+        const savedKey = sessionStorage.getItem(SESSION_KEY);
+        const savedRecordUrl = sessionStorage.getItem(RECORD_URL_KEY);
         
-        // Check if already authenticated on page load
-        window.onload = function() {
-            const savedKey = sessionStorage.getItem(SESSION_KEY);
-            if (savedKey) {
-                showDashboard();
-            }
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-        };
+        if (savedKey && savedRecordUrl) {
+            // Already authenticated, load dashboard
+            loadDashboard();
+        }
         
-        // Handle login form submission
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            handleLogin();
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    };
+    
+    // Handle login form submission
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        handleLogin();
+    });
+    
+    // Authenticate user with Power Automate flow
+async function handleLogin() {
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('loginError');
+    const loginButton = document.querySelector('#loginForm button[type="submit"]');
+    
+    // Disable button and show loading (with null check)
+    if (loginButton) {
+        loginButton.disabled = true;
+        loginButton.textContent = 'Authenticating...';
+    }
+    errorDiv.classList.add('hidden');
+    
+    try {
+        // Call authentication flow
+        const response = await fetch(AUTH_FLOW_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                password: password
+            })
         });
         
-        function handleLogin() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+        if (response.ok) {
+            const data = await response.json();
             
-            // Store the password (this will be used as the secret key for the flow)
-            sessionStorage.setItem(SESSION_KEY, password);
+            // Handle both response formats - extract body if it exists
+            const responseBody = data.body || data;
             
-            // Small delay to allow browser to detect successful login
-            setTimeout(() => {
-                document.getElementById('loginError').classList.add('hidden');
-                showDashboard();
-            }, 100);
-        }
-        
-        function showDashboard() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-        }
-        
-        function logout() {
-            sessionStorage.removeItem(SESSION_KEY);
-            document.getElementById('mainContent').classList.add('hidden');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('password').value = '';
-            document.getElementById('loginError').classList.add('hidden');
-        }
-        
-        // Function to add KPI record to Dataverse via Power Automate
-        async function addKPIRecord() {
-            const secretKey = sessionStorage.getItem(SESSION_KEY);
-            const statusDiv = document.getElementById('recordStatus');
+            console.log('Response body:', responseBody); // Debug log
             
-            if (!secretKey) {
-                logout();
-                return;
-            }
-            
-            // Show loading state
-            statusDiv.textContent = '⏳ Adding record...';
-            statusDiv.className = 'info';
-            statusDiv.classList.remove('hidden');
-            
-            try {
-                const response = await fetch(FLOW_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        secret: secretKey,
-                        timestamp: new Date().toISOString()
-                    })
-                });
+            // Validate response structure
+            if (responseBody.authenticated) {
                 
-                if (response.ok) {
-                    statusDiv.textContent = '✓ KPI record added successfully at ' + new Date().toLocaleString();
-                    statusDiv.className = 'success';
-                    
-                    // Auto-hide success message after 5 seconds
-                    setTimeout(() => {
-                        statusDiv.classList.add('hidden');
-                    }, 5000);
-                    
-                    // Refresh the chart after 2 seconds to show new data
-                    setTimeout(() => {
-                        refreshChart();
-                    }, 2000);
-                    
-                } else if (response.status === 401) {
-                    statusDiv.textContent = '✗ Invalid credentials. Please login again.';
-                    statusDiv.className = 'error';
-                    setTimeout(() => {
-                        logout();
-                    }, 2000);
-                } else {
-                    statusDiv.textContent = '✗ Failed to add record. Status: ' + response.status;
-                    statusDiv.className = 'error';
+                // Decode and store record flow URL
+                if (responseBody.recordFlowUrl) {
+                    try {
+                        const decodedRecordUrl = decodeURIComponent(responseBody.recordFlowUrl);
+                        sessionStorage.setItem(RECORD_URL_KEY, decodedRecordUrl);
+                        console.log('Decoded record URL:', decodedRecordUrl); // Debug log
+                    } catch (e) {
+                        console.error('Error decoding recordFlowUrl:', e);
+                        throw new Error('Failed to decode record flow URL');
+                    }
                 }
-            } catch (error) {
-                statusDiv.textContent = '✗ Error: ' + error.message;
-                statusDiv.className = 'error';
-            }
-        }
-        
-        function refreshChart() {
-            const iframe = document.getElementById('excelFrame');
-            const src = iframe.src;
-            iframe.src = '';
-            setTimeout(() => {
-                iframe.src = src;
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-            }, 100);
-        }
-        
-        function toggleFullscreen() {
-            const frame = document.querySelector('.chart-frame');
-            if (!document.fullscreenElement) {
-                frame.requestFullscreen().catch(err => {
-                    alert('Error: ' + err.message);
-                });
+                
+                // Decode and store Excel URL
+                if (responseBody.excelUrl) {
+                    try {
+                        const decodedExcelUrl = decodeURIComponent(responseBody.excelUrl);
+                        sessionStorage.setItem('kpi_excel_url', decodedExcelUrl);
+                        console.log('Decoded Excel URL:', decodedExcelUrl); // Debug log
+                    } catch (e) {
+                        console.error('Error decoding excelUrl:', e);
+                        throw new Error('Failed to decode Excel URL');
+                    }
+                }
+                
+                // Store password
+                sessionStorage.setItem(SESSION_KEY, password);
+                
+                // Load the dashboard
+                loadDashboard();
+                
             } else {
-                document.exitFullscreen();
+                // Log what we received for debugging
+                console.error('Response data:', data);
+                console.error('Response body:', responseBody);
+                throw new Error('Authentication failed - not authenticated');
             }
+        } else if (response.status === 401) {
+            errorDiv.textContent = 'Incorrect password';
+            errorDiv.classList.remove('hidden');
+            document.getElementById('password').value = '';
+            document.getElementById('password').focus();
+        } else {
+            errorDiv.textContent = 'Authentication failed. Status: ' + response.status;
+            errorDiv.classList.remove('hidden');
         }
-    </script>
+    } catch (error) {
+        errorDiv.textContent = 'Connection error: ' + error.message;
+        errorDiv.classList.remove('hidden');
+        console.error('Full error:', error);
+    } finally {
+        // Re-enable button (with null check)
+        if (loginButton) {
+            loginButton.disabled = false;
+            loginButton.textContent = 'Login';
+        }
+    }
+}
+    
+    // Load dashboard
+function loadDashboard() {
+    // Get Excel URL from session storage (returned by auth flow) or use hardcoded
+    const excelUrl = sessionStorage.getItem('kpi_excel_url');
+    
+    // Set Excel iframe URL
+    document.getElementById('excelFrame').src = excelUrl;
+    
+    // Set header image
+    const img = document.getElementById('headerImage');
+    if (img && IMAGE_URL) {
+        img.src = IMAGE_URL;
+        img.classList.remove('hidden');
+    }
+    
+    // Show dashboard, hide login
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+}
+
+    function logout() {
+        sessionStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(RECORD_URL_KEY);
+        document.getElementById('mainContent').classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('password').value = '';
+        document.getElementById('loginError').classList.add('hidden');
+        
+        // Clear iframe
+        document.getElementById('excelFrame').src = '';
+    }
+    
+    // Add KPI record to Dataverse via Power Automate
+    async function addKPIRecord() {
+        const password = sessionStorage.getItem(SESSION_KEY);
+        const recordUrl = sessionStorage.getItem(RECORD_URL_KEY);
+        const statusDiv = document.getElementById('recordStatus');
+        
+        if (!password || !recordUrl) {
+            logout();
+            return;
+        }
+        
+        // Show loading state
+        statusDiv.textContent = '⏳ Adding record...';
+        statusDiv.className = 'info';
+        statusDiv.classList.remove('hidden');
+        
+        try {
+            const response = await fetch(recordUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    password: password,
+                    timestamp: new Date().toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                statusDiv.textContent = '✓ ' + (data.message || 'Record added successfully at ' + new Date().toLocaleString());
+                statusDiv.className = 'success';
+                
+                // Auto-hide success message after 5 seconds
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
+                
+                // Refresh the chart after 2 seconds
+                setTimeout(() => {
+                    refreshChart();
+                }, 2000);
+                
+            } else if (response.status === 401) {
+                statusDiv.textContent = '✗ Authentication failed. Please login again.';
+                statusDiv.className = 'error-msg';
+                setTimeout(() => {
+                    logout();
+                }, 2000);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                statusDiv.textContent = '✗ ' + (errorData.message || 'Failed to add record');
+                statusDiv.className = 'error-msg';
+            }
+        } catch (error) {
+            statusDiv.textContent = '✗ Error: ' + error.message;
+            statusDiv.className = 'error-msg';
+        }
+    }
+    
+    function refreshChart() {
+        const iframe = document.getElementById('excelFrame');
+        const src = iframe.src;
+        iframe.src = '';
+        setTimeout(() => {
+            iframe.src = src;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }, 100);
+    }
+    
+    function toggleFullscreen() {
+        const frame = document.querySelector('.chart-frame');
+        if (!document.fullscreenElement) {
+            frame.requestFullscreen().catch(err => {
+                alert('Error: ' + err.message);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+</script>
 </body>
 </html>
