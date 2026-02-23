@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="apple-touch-icon" href="icon.png">
     <title>George KPIs Dashboard</title>
     <style>
         * {
@@ -37,22 +34,185 @@
         .container {
             padding: 10px;
         }
-        
-        .chart-frame {
+
+        /* ── CALENDAR ── */
+        .calendar-wrapper {
             background: white;
             border-radius: 8px;
-            overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 16px;
             margin-bottom: 15px;
         }
-        
-        iframe {
-            width: 100%;
-            height: 500px;
-            border: none;
-            display: block;
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
         }
-        
+
+        .calendar-header h3 {
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .cal-nav {
+            display: flex;
+            gap: 6px;
+        }
+
+        .cal-nav button {
+            padding: 6px 14px;
+            font-size: 14px;
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .cal-nav button:hover { background: #e0e0e0; }
+
+        .weekday-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .weekday-header {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            padding: 4px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 2px;
+            position: relative;
+            min-height: 56px;
+            border: 1px solid transparent;
+        }
+
+        .day-cell.empty-slot {
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .day-cell.no-record {
+            background: #f9f9f9;
+            border-color: #e0e0e0;
+        }
+
+        .day-cell.future-cell {
+            background: #fafafa;
+            border: 1px dashed #ddd;
+            opacity: 0.6;
+        }
+
+        /* Exact Excel colors */
+        .day-cell.status-green  { background: #C6EFCE; border-color: rgba(0,97,0,0.25); }
+        .day-cell.status-yellow { background: #FFEB9C; border-color: rgba(156,87,0,0.25); }
+        .day-cell.status-red    { background: #FFC7CE; border-color: rgba(156,0,6,0.25); }
+
+        /* Today highlight */
+        .day-cell.today-cell { outline: 2px solid #0078d4; outline-offset: -1px; }
+
+        .cell-date {
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+
+        .status-green  .cell-date { color: #006100; }
+        .status-yellow .cell-date { color: #9C5700; }
+        .status-red    .cell-date { color: #9C0006; }
+        .no-record     .cell-date { color: #bbb; }
+        .future-cell   .cell-date { color: #ccc; }
+
+        .cell-label {
+            font-size: 7.5px;
+            text-align: center;
+            line-height: 1.25;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: pre;
+        }
+
+        .status-green  .cell-label { color: #006100; }
+        .status-yellow .cell-label { color: #9C5700; }
+        .status-red    .cell-label { color: #9C0006; }
+
+        .cell-count {
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            font-size: 8px;
+            font-weight: 600;
+            opacity: 0.75;
+        }
+
+        .status-green  .cell-count { color: #006100; }
+        .status-yellow .cell-count { color: #9C5700; }
+        .status-red    .cell-count { color: #9C0006; }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .legend-dot.green  { background: #C6EFCE; border: 1px solid rgba(0,97,0,0.3); }
+        .legend-dot.yellow { background: #FFEB9C; border: 1px solid rgba(156,87,0,0.3); }
+        .legend-dot.red    { background: #FFC7CE; border: 1px solid rgba(156,0,6,0.3); }
+        .legend-dot.empty  { background: #f9f9f9; border: 1px solid #ddd; }
+
+        /* Calendar loading/error state */
+        .calendar-status {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 13px;
+        }
+
+        /* ── CONTROLS ── */
         .controls {
             text-align: center;
             padding: 10px;
@@ -69,19 +229,16 @@
             margin: 5px;
         }
         
-        button:active {
-            background-color: #106ebe;
-        }
+        button:active { background-color: #106ebe; }
         
         button.add-record {
             background-color: #107c10;
             font-weight: bold;
         }
         
-        button.add-record:active {
-            background-color: #0e6b0e;
-        }
-        
+        button.add-record:active { background-color: #0e6b0e; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .info {
             background: white;
             padding: 10px;
@@ -92,13 +249,11 @@
             text-align: center;
         }
         
-        /* Login screen styles */
+        /* ── LOGIN ── */
         .login-screen {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: linear-gradient(135deg, #0078d4, #106ebe);
             display: flex;
             align-items: center;
@@ -115,19 +270,9 @@
             width: 90%;
         }
         
-        .login-box h2 {
-            margin-bottom: 20px;
-            color: #333;
-            text-align: center;
-        }
+        .login-box h2 { margin-bottom: 20px; color: #333; text-align: center; }
         
-        .login-box form {
-            width: 100%;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
+        .form-group { margin-bottom: 15px; }
         
         .form-group label {
             display: block;
@@ -158,9 +303,7 @@
             margin-top: 10px;
         }
         
-        .login-box button[type="submit"]:hover {
-            background-color: #106ebe;
-        }
+        .login-box button[type="submit"]:hover { background-color: #106ebe; }
         
         .error {
             color: #d13438;
@@ -181,10 +324,18 @@
             border-radius: 4px;
             margin-top: 10px;
         }
-        
-        .hidden {
-            display: none;
+
+        .error-msg {
+            color: #d13438;
+            font-size: 14px;
+            text-align: center;
+            padding: 8px;
+            background-color: #fde7e9;
+            border-radius: 4px;
+            margin-top: 10px;
         }
+        
+        .hidden { display: none; }
         
         .login-info {
             font-size: 12px;
@@ -195,7 +346,8 @@
     </style>
 </head>
 <body>
-    <!-- Login Screen -->
+
+    <!-- ══════ LOGIN SCREEN ══════ -->
     <div id="loginScreen" class="login-screen">
         <div class="login-box">
             <h2>🔐 KPI Dashboard</h2>
@@ -212,7 +364,6 @@
                            autocomplete="username"
                            required>
                 </div>
-                
                 <div class="form-group">
                     <label for="password">Password:</label>
                     <input type="password" 
@@ -222,284 +373,427 @@
                            autocomplete="current-password"
                            required>
                 </div>
-                
                 <button type="submit" id="loginButton">Login</button>
             </form>
             
-            <div class="login-info">
-                Your browser can save this password
-            </div>
+            <div class="login-info">Your browser can save this password</div>
         </div>
     </div>
 
-    <!-- Main Content (hidden until authenticated) -->
+    <!-- ══════ MAIN DASHBOARD ══════ -->
     <div id="mainContent" class="hidden">
         <div class="header">
-            <img src="evolution2.png" alt="Evolution Logo">
+            <img id="headerImage" src="YOUR_IMAGE_URL" alt="Logo">
             <h2>George KPIs Dashboard</h2>
         </div>
         
         <div class="container">
-            <div class="chart-frame">
-                <iframe id="excelFrame" 
-                        src=""
-                        allowfullscreen>
-                </iframe>
+
+            <!-- Calendar -->
+            <div class="calendar-wrapper">
+                <div class="calendar-header">
+                    <h3 id="monthLabel">Loading...</h3>
+                    <div class="cal-nav">
+                        <button onclick="changeMonth(-1)">‹ Prev</button>
+                        <button onclick="changeMonth(0)">Today</button>
+                        <button onclick="changeMonth(1)">Next ›</button>
+                    </div>
+                </div>
+
+                <div class="weekday-row">
+                    <div class="weekday-header">Mon</div>
+                    <div class="weekday-header">Tue</div>
+                    <div class="weekday-header">Wed</div>
+                    <div class="weekday-header">Thu</div>
+                    <div class="weekday-header">Fri</div>
+                    <div class="weekday-header">Sat</div>
+                    <div class="weekday-header">Sun</div>
+                </div>
+
+                <div class="calendar-grid" id="calendarGrid">
+                    <div class="calendar-status" style="grid-column:1/-1">Loading calendar...</div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-dot green"></div> On time for breakfast (before 08:10)</div>
+                    <div class="legend-item"><div class="legend-dot yellow"></div> On time for 1st lesson (08:10–08:30)</div>
+                    <div class="legend-item"><div class="legend-dot red"></div> Late (after 08:30)</div>
+                    <div class="legend-item"><div class="legend-dot empty"></div> No record</div>
+                </div>
             </div>
-            
+
+            <!-- Controls -->
             <div class="controls">
-                <button class="add-record" onclick="addKPIRecord()">➕ Add KPI Record</button>
-                <button onclick="refreshChart()">🔄 Refresh Chart</button>
-                <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+                <button class="add-record" id="addBtn" onclick="addKPIRecord()">➕ Add KPI Record</button>
+                <button onclick="refreshCalendar()">🔄 Refresh</button>
                 <button onclick="logout()">🚪 Logout</button>
             </div>
             
             <div id="recordStatus" class="hidden"></div>
             
             <div class="info">
-                Last refreshed: <span id="lastUpdate">Page load</span>
+                Last refreshed: <span id="lastUpdate">—</span>
             </div>
         </div>
     </div>
 
-    <script>
-    const AUTH_FLOW_URL = 'https://default846521e158fa45d6966500118b67a0.d1.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f15cad7bd122454792db84e5e3be20b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XDXpkI4sgaNoAALz_CGB-4nQSkcA8D7LqWE-rfwS3gw'    // Configuration - ONLY the authentication flow URL is visible in source code
-    
-    // Session storage keys
-    const SESSION_KEY = 'kpi_session_key';
-    const RECORD_URL_KEY = 'kpi_record_url';
-    
-    // Hardcoded URLs that don't need to be hidden
-    //const EXCEL_URL = 'YOUR_EXCEL_EMBED_URL_HERE';
-    const IMAGE_URL = 'YOUR_IMAGE_URL_HERE';
-    
-    // Check if already authenticated on page load
-    window.onload = function() {
-        const savedKey = sessionStorage.getItem(SESSION_KEY);
-        const savedRecordUrl = sessionStorage.getItem(RECORD_URL_KEY);
-        
-        if (savedKey && savedRecordUrl) {
-            // Already authenticated, load dashboard
-            loadDashboard();
-        }
-        
-        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-    };
-    
-    // Handle login form submission
-    document.getElementById('loginForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        handleLogin();
-    });
-    
-    // Authenticate user with Power Automate flow
-async function handleLogin() {
-    const password = document.getElementById('password').value;
-    const errorDiv = document.getElementById('loginError');
-    const loginButton = document.querySelector('#loginForm button[type="submit"]');
-    
-    // Disable button and show loading (with null check)
-    if (loginButton) {
-        loginButton.disabled = true;
-        loginButton.textContent = 'Authenticating...';
+<script>
+// ════════════════════════════════════════
+// CONFIG — only the AUTH URL is in source code.
+// Record flow URL and Calendar flow URL are returned
+// by the auth flow and stored in sessionStorage.
+// ════════════════════════════════════════
+const AUTH_FLOW_URL = 'https://default846521e158fa45d6966500118b67a0.d1.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f15cad7bd122454792db84e5e3be20b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XDXpkI4sgaNoAALz_CGB-4nQSkcA8D7LqWE-rfwS3gw';
+
+const SESSION_KEY    = 'kpi_session_key';
+const RECORD_URL_KEY = 'kpi_record_url';
+const CALENDAR_URL_KEY = 'kpi_calendar_url';
+
+// Time thresholds matching your Tech sheet (B1=08:10 Breakfast, B2=08:30 Lessons)
+const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 10;   // 490
+const LESSONS_CUTOFF_MINUTES   = 8 * 60 + 30;   // 510
+
+// Calendar navigation state
+let viewYear  = new Date().getFullYear();
+let viewMonth = new Date().getMonth(); // 0-indexed
+
+// ════════════════════════════════════════
+// PAGE LOAD — restore session if present
+// ════════════════════════════════════════
+window.onload = function() {
+    const savedKey = sessionStorage.getItem(SESSION_KEY);
+    const savedRecordUrl = sessionStorage.getItem(RECORD_URL_KEY);
+    const savedCalendarUrl = sessionStorage.getItem(CALENDAR_URL_KEY);
+
+    if (savedKey && savedRecordUrl && savedCalendarUrl) {
+        loadDashboard();
     }
+};
+
+// ════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    handleLogin();
+});
+
+async function handleLogin() {
+    const password   = document.getElementById('password').value;
+    const errorDiv   = document.getElementById('loginError');
+    const loginBtn   = document.getElementById('loginButton');
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Authenticating...';
     errorDiv.classList.add('hidden');
-    
+
     try {
-        // Call authentication flow
         const response = await fetch(AUTH_FLOW_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                password: password
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Handle both response formats - extract body if it exists
-            const responseBody = data.body || data;
-            
-            console.log('Response body:', responseBody); // Debug log
-            
-            // Validate response structure
-            if (responseBody.authenticated) {
-                
-                // Decode and store record flow URL
-                if (responseBody.recordFlowUrl) {
-                    try {
-                        const decodedRecordUrl = decodeURIComponent(responseBody.recordFlowUrl);
-                        sessionStorage.setItem(RECORD_URL_KEY, decodedRecordUrl);
-                        console.log('Decoded record URL:', decodedRecordUrl); // Debug log
-                    } catch (e) {
-                        console.error('Error decoding recordFlowUrl:', e);
-                        throw new Error('Failed to decode record flow URL');
-                    }
-                }
-                
-                // Decode and store Excel URL
-                if (responseBody.excelUrl) {
-                    try {
-                        const decodedExcelUrl = decodeURIComponent(responseBody.excelUrl);
-                        sessionStorage.setItem('kpi_excel_url', decodedExcelUrl);
-                        console.log('Decoded Excel URL:', decodedExcelUrl); // Debug log
-                    } catch (e) {
-                        console.error('Error decoding excelUrl:', e);
-                        throw new Error('Failed to decode Excel URL');
-                    }
-                }
-                
-                // Store password
-                sessionStorage.setItem(SESSION_KEY, password);
-                
-                // Load the dashboard
-                loadDashboard();
-                
-            } else {
-                // Log what we received for debugging
-                console.error('Response data:', data);
-                console.error('Response body:', responseBody);
-                throw new Error('Authentication failed - not authenticated');
-            }
-        } else if (response.status === 401) {
+
+        if (!response.ok && response.status === 401) {
             errorDiv.textContent = 'Incorrect password';
             errorDiv.classList.remove('hidden');
             document.getElementById('password').value = '';
             document.getElementById('password').focus();
-        } else {
-            errorDiv.textContent = 'Authentication failed. Status: ' + response.status;
-            errorDiv.classList.remove('hidden');
-        }
-    } catch (error) {
-        errorDiv.textContent = 'Connection error: ' + error.message;
-        errorDiv.classList.remove('hidden');
-        console.error('Full error:', error);
-    } finally {
-        // Re-enable button (with null check)
-        if (loginButton) {
-            loginButton.disabled = false;
-            loginButton.textContent = 'Login';
-        }
-    }
-}
-    
-    // Load dashboard
-function loadDashboard() {
-    // Get Excel URL from session storage (returned by auth flow) or use hardcoded
-    const excelUrl = sessionStorage.getItem('kpi_excel_url');
-    
-    // Set Excel iframe URL
-    document.getElementById('excelFrame').src = excelUrl;
-    
-    // Set header image
-    const img = document.getElementById('headerImage');
-    if (img && IMAGE_URL) {
-        img.src = IMAGE_URL;
-        img.classList.remove('hidden');
-    }
-    
-    // Show dashboard, hide login
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');
-}
-
-    function logout() {
-        sessionStorage.removeItem(SESSION_KEY);
-        sessionStorage.removeItem(RECORD_URL_KEY);
-        document.getElementById('mainContent').classList.add('hidden');
-        document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('password').value = '';
-        document.getElementById('loginError').classList.add('hidden');
-        
-        // Clear iframe
-        document.getElementById('excelFrame').src = '';
-    }
-    
-    // Add KPI record to Dataverse via Power Automate
-    async function addKPIRecord() {
-        const password = sessionStorage.getItem(SESSION_KEY);
-        const recordUrl = sessionStorage.getItem(RECORD_URL_KEY);
-        const statusDiv = document.getElementById('recordStatus');
-        
-        if (!password || !recordUrl) {
-            logout();
             return;
         }
-        
-        // Show loading state
-        statusDiv.textContent = '⏳ Adding record...';
-        statusDiv.className = 'info';
-        statusDiv.classList.remove('hidden');
-        
-        try {
-            const response = await fetch(recordUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    password: password,
-                    timestamp: new Date().toISOString()
-                })
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                statusDiv.textContent = '✓ ' + (data.message || 'Record added successfully at ' + new Date().toLocaleString());
-                statusDiv.className = 'success';
-                
-                // Auto-hide success message after 5 seconds
-                setTimeout(() => {
-                    statusDiv.classList.add('hidden');
-                }, 5000);
-                
-                // Refresh the chart after 2 seconds
-                setTimeout(() => {
-                    refreshChart();
-                }, 2000);
-                
-            } else if (response.status === 401) {
-                statusDiv.textContent = '✗ Authentication failed. Please login again.';
-                statusDiv.className = 'error-msg';
-                setTimeout(() => {
-                    logout();
-                }, 2000);
-            } else {
-                const errorData = await response.json().catch(() => ({}));
-                statusDiv.textContent = '✗ ' + (errorData.message || 'Failed to add record');
-                statusDiv.className = 'error-msg';
-            }
-        } catch (error) {
-            statusDiv.textContent = '✗ Error: ' + error.message;
+
+        const data = await response.json();
+        const body = data.body || data; // handle both response wrappers
+
+        if (body.authenticated) {
+            // Decode and store record flow URL
+            const recordUrl   = decodeURIComponent(body.recordFlowUrl);
+            // Decode and store calendar flow URL (NEW — returned by auth flow)
+            const calendarUrl = decodeURIComponent(body.calendarFlowUrl);
+
+            sessionStorage.setItem(SESSION_KEY,      password);
+            sessionStorage.setItem(RECORD_URL_KEY,   recordUrl);
+            sessionStorage.setItem(CALENDAR_URL_KEY, calendarUrl);
+
+            loadDashboard();
+        } else {
+            errorDiv.textContent = 'Incorrect password';
+            errorDiv.classList.remove('hidden');
+            document.getElementById('password').value = '';
+            document.getElementById('password').focus();
+        }
+
+    } catch (err) {
+        errorDiv.textContent = 'Connection error: ' + err.message;
+        errorDiv.classList.remove('hidden');
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+    }
+}
+
+// ════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════
+function loadDashboard() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+
+    viewYear  = new Date().getFullYear();
+    viewMonth = new Date().getMonth();
+    loadCalendar();
+}
+
+function logout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(RECORD_URL_KEY);
+    sessionStorage.removeItem(CALENDAR_URL_KEY);
+    document.getElementById('mainContent').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('password').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+}
+
+// ════════════════════════════════════════
+// ADD KPI RECORD
+// ════════════════════════════════════════
+async function addKPIRecord() {
+    const password  = sessionStorage.getItem(SESSION_KEY);
+    const recordUrl = sessionStorage.getItem(RECORD_URL_KEY);
+    const statusDiv = document.getElementById('recordStatus');
+    const addBtn    = document.getElementById('addBtn');
+
+    if (!password || !recordUrl) { logout(); return; }
+
+    addBtn.disabled = true;
+    addBtn.textContent = '⏳ Adding...';
+    statusDiv.textContent = '⏳ Adding record...';
+    statusDiv.className = 'info';
+    statusDiv.classList.remove('hidden');
+
+    // Try to get geolocation (silently skip if unavailable)
+    let geoString = '';
+    try {
+        const pos = await new Promise((res, rej) =>
+            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+        );
+        geoString = `${pos.coords.latitude},${pos.coords.longitude}`;
+    } catch (e) { /* geolocation not available or denied */ }
+
+    try {
+        const response = await fetch(recordUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password,
+                timestamp: new Date().toISOString(),
+                georeference: geoString
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            statusDiv.textContent = '✓ ' + (data.message || 'Record added successfully at ' + new Date().toLocaleString());
+            statusDiv.className = 'success';
+            setTimeout(() => statusDiv.classList.add('hidden'), 5000);
+            setTimeout(() => loadCalendar(), 1500); // refresh calendar
+        } else if (response.status === 401) {
+            statusDiv.textContent = '✗ Authentication failed. Please login again.';
+            statusDiv.className = 'error-msg';
+            setTimeout(() => logout(), 2000);
+        } else {
+            statusDiv.textContent = '✗ ' + (data.message || 'Failed to add record');
             statusDiv.className = 'error-msg';
         }
+    } catch (err) {
+        statusDiv.textContent = '✗ Error: ' + err.message;
+        statusDiv.className = 'error-msg';
+    } finally {
+        addBtn.disabled = false;
+        addBtn.textContent = '➕ Add KPI Record';
     }
-    
-    function refreshChart() {
-        const iframe = document.getElementById('excelFrame');
-        const src = iframe.src;
-        iframe.src = '';
-        setTimeout(() => {
-            iframe.src = src;
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-        }, 100);
+}
+
+// ════════════════════════════════════════
+// CALENDAR — fetch & render
+// ════════════════════════════════════════
+function changeMonth(delta) {
+    if (delta === 0) {
+        viewYear  = new Date().getFullYear();
+        viewMonth = new Date().getMonth();
+    } else {
+        viewMonth += delta;
+        if (viewMonth > 11) { viewMonth = 0;  viewYear++; }
+        if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
     }
-    
-    function toggleFullscreen() {
-        const frame = document.querySelector('.chart-frame');
-        if (!document.fullscreenElement) {
-            frame.requestFullscreen().catch(err => {
-                alert('Error: ' + err.message);
-            });
+    loadCalendar();
+}
+
+function refreshCalendar() { loadCalendar(); }
+
+async function loadCalendar() {
+    const calendarUrl = sessionStorage.getItem(CALENDAR_URL_KEY);
+    const password    = sessionStorage.getItem(SESSION_KEY);
+    const grid        = document.getElementById('calendarGrid');
+
+    if (!calendarUrl || !password) { logout(); return; }
+
+    // Update month label
+    const monthNames = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+    document.getElementById('monthLabel').textContent = `${monthNames[viewMonth]} ${viewYear}`;
+
+    grid.innerHTML = '<div class="calendar-status" style="grid-column:1/-1">⏳ Loading...</div>';
+
+    try {
+        // Build UTC date range for the viewed month.
+        // Start = first moment of the month, End = first moment of the NEXT month.
+        // Dataverse OData filter: createdon ge start and createdon lt end
+        const yearMonthStart = new Date(Date.UTC(viewYear, viewMonth, 1)).toISOString();
+        const yearMonthEnd   = new Date(Date.UTC(viewYear, viewMonth + 1, 1)).toISOString();
+
+        const response = await fetch(calendarUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password,
+                yearMonthStart,
+                yearMonthEnd
+            })
+        });
+
+        if (response.status === 401) { logout(); return; }
+
+        const data = await response.json();
+        const body = data.body || data;
+
+        renderCalendar(body.records || []);
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+    } catch (err) {
+        grid.innerHTML = `<div class="calendar-status" style="color:#d13438;grid-column:1/-1">✗ Could not load calendar: ${err.message}</div>`;
+    }
+}
+
+// ════════════════════════════════════════
+// CALENDAR RENDERING
+// ════════════════════════════════════════
+
+// Priority order: green(1) < yellow(2) < red(3)
+// If a day has multiple records, worst status wins.
+const STATUS_PRIORITY = { green: 1, yellow: 2, red: 3 };
+
+function classifyRecord(isoString) {
+    // Dataverse returns createdon in UTC.
+    // Adjust: if your timezone is UTC+2, school's 08:10 local = 06:10 UTC.
+    // Set TIMEZONE_OFFSET_HOURS to your UTC offset (e.g. 2 for Riga, EET summer / 3 for EEST).
+    const TIMEZONE_OFFSET_HOURS = 2; // ← adjust for your local timezone
+
+    const d = new Date(isoString);
+    const localMinutes = (d.getUTCHours() + TIMEZONE_OFFSET_HOURS) * 60 + d.getUTCMinutes();
+
+    if (localMinutes <= BREAKFAST_CUTOFF_MINUTES) return 'green';
+    if (localMinutes <= LESSONS_CUTOFF_MINUTES)   return 'yellow';
+    return 'red';
+}
+
+function statusLabel(status) {
+    if (status === 'green')  return 'On time\nBreakfast';
+    if (status === 'yellow') return 'On time\n1st Lesson';
+    if (status === 'red')    return 'Late';
+    return '';
+}
+
+function renderCalendar(records) {
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+
+    // Build day map: "YYYY-MM-DD" → { status, count }
+    const dayMap = {};
+    for (const rec of records) {
+        const isoString = rec.createdon || rec.timestamp;
+        const d = new Date(isoString);
+
+        // Use local date (accounting for timezone) to key the record
+        const TIMEZONE_OFFSET_HOURS = 2; // ← same offset as above
+        const localDate = new Date(d.getTime() + TIMEZONE_OFFSET_HOURS * 3600 * 1000);
+        const key = localDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+        const status = classifyRecord(isoString);
+
+        if (!dayMap[key]) {
+            dayMap[key] = { status, count: 1 };
         } else {
-            document.exitFullscreen();
+            dayMap[key].count++;
+            if (STATUS_PRIORITY[status] > STATUS_PRIORITY[dayMap[key].status]) {
+                dayMap[key].status = status;
+            }
         }
     }
+
+    // Calendar math
+    const today = new Date();
+    const todayKey = today.toISOString().slice(0, 10);
+
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const lastDay  = new Date(viewYear, viewMonth + 1, 0);
+
+    // Monday-start offset (Mon=0 … Sun=6)
+    const startOffset = (firstDay.getDay() + 6) % 7;
+
+    // Empty cells before the 1st
+    for (let i = 0; i < startOffset; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'day-cell empty-slot';
+        grid.appendChild(blank);
+    }
+
+    // Day cells
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const rec = dayMap[key];
+        const cellDate = new Date(viewYear, viewMonth, day);
+        const isFuture = cellDate > today && key !== todayKey;
+
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+
+        if (isFuture) {
+            cell.classList.add('future-cell');
+        } else if (rec) {
+            cell.classList.add(`status-${rec.status}`);
+        } else {
+            cell.classList.add('no-record');
+        }
+
+        if (key === todayKey) cell.classList.add('today-cell');
+
+        // Date number
+        const dateEl = document.createElement('div');
+        dateEl.className = 'cell-date';
+        dateEl.textContent = day;
+        cell.appendChild(dateEl);
+
+        // Status label (only for recorded days)
+        if (rec) {
+            const labelEl = document.createElement('div');
+            labelEl.className = 'cell-label';
+            labelEl.textContent = statusLabel(rec.status);
+            cell.appendChild(labelEl);
+
+            // Record count badge (if more than 1)
+            if (rec.count > 1) {
+                const countEl = document.createElement('div');
+                countEl.className = 'cell-count';
+                countEl.textContent = `×${rec.count}`;
+                cell.appendChild(countEl);
+            }
+        }
+
+        grid.appendChild(cell);
+    }
+}
 </script>
 </body>
-
 </html>
-
