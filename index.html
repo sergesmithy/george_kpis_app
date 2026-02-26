@@ -383,7 +383,7 @@
     <!-- ══════ MAIN DASHBOARD ══════ -->
     <div id="mainContent" class="hidden">
         <div class="header">
-            <img id="headerImage" src="evolution2.png" alt="Evolution">
+            <img id="headerImage" src="evolution2.png" alt="Logo">
             <h2>George KPIs Dashboard</h2>
         </div>
         
@@ -450,8 +450,8 @@ const RECORD_URL_KEY = 'kpi_record_url';
 const CALENDAR_URL_KEY = 'kpi_calendar_url';
 
 // Time thresholds matching your Tech sheet (B1=08:10 Breakfast, B2=08:30 Lessons)
-const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 10;   // 490
-const LESSONS_CUTOFF_MINUTES   = 8 * 60 + 30;   // 510
+const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 20;   // 490
+const LESSONS_CUTOFF_MINUTES   = 8 * 60 + 35;   // 510
 
 // Calendar navigation state
 let viewYear  = new Date().getFullYear();
@@ -796,5 +796,4 @@ function renderCalendar(records) {
 }
 </script>
 </body>
-
 </html>
