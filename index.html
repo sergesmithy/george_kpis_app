@@ -449,8 +449,8 @@ const SESSION_KEY    = 'kpi_session_key';
 const RECORD_URL_KEY = 'kpi_record_url';
 const CALENDAR_URL_KEY = 'kpi_calendar_url';
 
-// Time thresholds matching your Tech sheet (B1=08:10 Breakfast, B2=08:30 Lessons)
-const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 20;   // 490
+// Time thresholds matching your Tech sheet (B1=08:25 Breakfast, B2=08:35 Lessons)
+const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 25;   // 490
 const LESSONS_CUTOFF_MINUTES   = 8 * 60 + 35;   // 510
 
 // Calendar navigation state
@@ -686,9 +686,9 @@ const STATUS_PRIORITY = { green: 1, yellow: 2, red: 3 };
 
 function classifyRecord(isoString) {
     // Dataverse returns createdon in UTC.
-    // Adjust: if your timezone is UTC+2, school's 08:10 local = 06:10 UTC.
+    // Adjust: if your timezone is UTC+2, school's 08:20 local = 06:20 UTC.
     // Set TIMEZONE_OFFSET_HOURS to your UTC offset (e.g. 2 for Riga, EET summer / 3 for EEST).
-    const TIMEZONE_OFFSET_HOURS = 2; // ← adjust for your local timezone
+    const TIMEZONE_OFFSET_HOURS = 1; // ← adjust for your local timezone
 
     const d = new Date(isoString);
     const localMinutes = (d.getUTCHours() + TIMEZONE_OFFSET_HOURS) * 60 + d.getUTCMinutes();
@@ -716,7 +716,7 @@ function renderCalendar(records) {
         const d = new Date(isoString);
 
         // Use local date (accounting for timezone) to key the record
-        const TIMEZONE_OFFSET_HOURS = 2; // ← same offset as above
+        const TIMEZONE_OFFSET_HOURS = 1; // ← same offset as above
         const localDate = new Date(d.getTime() + TIMEZONE_OFFSET_HOURS * 3600 * 1000);
         const key = localDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
