@@ -685,16 +685,16 @@ async function loadCalendar() {
 const STATUS_PRIORITY = { green: 1, yellow: 2, red: 3 };
 
 function classifyRecord(isoString) {
-    // Dataverse returns createdon in UTC.
-    // Adjust: if your timezone is UTC+2, school's 08:20 local = 06:20 UTC.
-    // Set TIMEZONE_OFFSET_HOURS to your UTC offset (e.g. 2 for Riga, EET summer / 3 for EEST).
-    const TIMEZONE_OFFSET_HOURS = 1; // ← the Calendar flow returns time in Western Europe time zone and not in UTC time zone
+    // The flow returns createdon already in Western European time with no
+    // timezone suffix, e.g. "2026-03-02T08:34:24.0000000".
+    // We read hours and minutes directly from the string so that JavaScript
+    // never reinterprets the value as UTC or local browser time.
+    const hours        = parseInt(isoString.substring(11, 13), 10);
+    const minutes      = parseInt(isoString.substring(14, 16), 10);
+    const totalMinutes = hours * 60 + minutes;
 
-    const d = new Date(isoString);
-    const localMinutes = (d.getUTCHours() + TIMEZONE_OFFSET_HOURS) * 60 + d.getUTCMinutes();
-
-    if (localMinutes <= BREAKFAST_CUTOFF_MINUTES) return 'green';
-    if (localMinutes <= LESSONS_CUTOFF_MINUTES)   return 'yellow';
+    if (totalMinutes <= BREAKFAST_CUTOFF_MINUTES) return 'green';
+    if (totalMinutes <= LESSONS_CUTOFF_MINUTES)   return 'yellow';
     return 'red';
 }
 
@@ -713,12 +713,11 @@ function renderCalendar(records) {
     const dayMap = {};
     for (const rec of records) {
         const isoString = rec.createdon || rec.timestamp;
-        const d = new Date(isoString);
 
-        // Use local date (accounting for timezone) to key the record
-        const TIMEZONE_OFFSET_HOURS = 1; // ← the Calendar flow returns time in Western Europe time zone and not in UTC time zone
-        const localDate = new Date(d.getTime() + TIMEZONE_OFFSET_HOURS * 3600 * 1000);
-        const key = localDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        // Read the date portion directly from the string (characters 0-9),
+        // e.g. "2026-03-02T08:34:24.0000000" → "2026-03-02".
+        // This avoids any JavaScript timezone reinterpretation.
+        const key = isoString.substring(0, 10); // "YYYY-MM-DD"
 
         const status = classifyRecord(isoString);
 
@@ -734,7 +733,7 @@ function renderCalendar(records) {
 
     // Calendar math
     const today = new Date();
-    const todayKey = today.toISOString().slice(0, 10);
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
     const firstDay = new Date(viewYear, viewMonth, 1);
     const lastDay  = new Date(viewYear, viewMonth + 1, 0);
