@@ -688,7 +688,7 @@ function classifyRecord(isoString) {
     // Dataverse returns createdon in UTC.
     // Adjust: if your timezone is UTC+2, school's 08:20 local = 06:20 UTC.
     // Set TIMEZONE_OFFSET_HOURS to your UTC offset (e.g. 2 for Riga, EET summer / 3 for EEST).
-    const TIMEZONE_OFFSET_HOURS = 0; // ← the Calendar flow returns time in Western Europe time zone and not in UTC time zone
+    const TIMEZONE_OFFSET_HOURS = 1; // ← the Calendar flow returns time in Western Europe time zone and not in UTC time zone
 
     const d = new Date(isoString);
     const localMinutes = (d.getUTCHours() + TIMEZONE_OFFSET_HOURS) * 60 + d.getUTCMinutes();
@@ -716,7 +716,7 @@ function renderCalendar(records) {
         const d = new Date(isoString);
 
         // Use local date (accounting for timezone) to key the record
-        const TIMEZONE_OFFSET_HOURS = 0; // ← the Calendar flow returns time in Western Europe time zone and not in UTC time zone
+        const TIMEZONE_OFFSET_HOURS = 1; // ← the Calendar flow returns time in Western Europe time zone and not in UTC time zone
         const localDate = new Date(d.getTime() + TIMEZONE_OFFSET_HOURS * 3600 * 1000);
         const key = localDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
