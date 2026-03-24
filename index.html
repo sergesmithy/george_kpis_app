@@ -20,15 +20,55 @@
             background-color: #0078d4;
             color: white;
             padding: 15px;
-            text-align: center;
         }
-        
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
         .header img {
-            max-width: 100%;
-            max-height: 150px;
-            height: auto;
+            max-height: 80px;
+            width: auto;
+            flex-shrink: 0;
+        }
+
+        .header-text {
+            flex: 1;
+        }
+
+        .header-text h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .reward-box {
+            display: inline-block;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 8px;
+            padding: 8px 14px;
+        }
+
+        .reward-label {
+            font-size: 11px;
+            opacity: 0.85;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .reward-value {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            min-width: 80px;
             display: block;
-            margin: 0 auto 10px auto;
+        }
+
+        .reward-value.loading {
+            font-size: 14px;
+            opacity: 0.7;
         }
         
         .container {
@@ -383,8 +423,16 @@
     <!-- ══════ MAIN DASHBOARD ══════ -->
     <div id="mainContent" class="hidden">
         <div class="header">
-            <img id="headerImage" src="evolution2.png" alt="Logo">
-            <h2>George KPIs Dashboard</h2>
+            <div class="header-inner">
+                <img id="headerImage" src="evolution2.png" alt="Logo">
+                <div class="header-text">
+                    <h2>George KPIs Dashboard</h2>
+                    <div class="reward-box">
+                        <div class="reward-label">Reward (UAH):</div>
+                        <span class="reward-value loading" id="rewardValue">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="container">
@@ -445,9 +493,10 @@
 // ════════════════════════════════════════
 const AUTH_FLOW_URL = 'https://default846521e158fa45d6966500118b67a0.d1.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f15cad7bd122454792db84e5e3be20b7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XDXpkI4sgaNoAALz_CGB-4nQSkcA8D7LqWE-rfwS3gw';
 
-const SESSION_KEY    = 'kpi_session_key';
-const RECORD_URL_KEY = 'kpi_record_url';
+const SESSION_KEY      = 'kpi_session_key';
+const RECORD_URL_KEY   = 'kpi_record_url';
 const CALENDAR_URL_KEY = 'kpi_calendar_url';
+const REWARD_URL_KEY   = 'kpi_reward_url';
 
 // Time thresholds matching your Tech sheet (B1=08:25 Breakfast, B2=08:35 Lessons)
 const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 25;   // 490
@@ -464,8 +513,9 @@ window.onload = function() {
     const savedKey = sessionStorage.getItem(SESSION_KEY);
     const savedRecordUrl = sessionStorage.getItem(RECORD_URL_KEY);
     const savedCalendarUrl = sessionStorage.getItem(CALENDAR_URL_KEY);
+    const savedRewardUrl = sessionStorage.getItem(REWARD_URL_KEY);
 
-    if (savedKey && savedRecordUrl && savedCalendarUrl) {
+    if (savedKey && savedRecordUrl && savedCalendarUrl && savedRewardUrl) {
         loadDashboard();
     }
 };
@@ -508,12 +558,15 @@ async function handleLogin() {
         if (body.authenticated) {
             // Decode and store record flow URL
             const recordUrl   = decodeURIComponent(body.recordFlowUrl);
-            // Decode and store calendar flow URL (NEW — returned by auth flow)
+            // Decode and store calendar flow URL
             const calendarUrl = decodeURIComponent(body.calendarFlowUrl);
+            // Decode and store reward calculator flow URL
+            const rewardUrl   = decodeURIComponent(body.rewardCalcUrl);
 
             sessionStorage.setItem(SESSION_KEY,      password);
             sessionStorage.setItem(RECORD_URL_KEY,   recordUrl);
             sessionStorage.setItem(CALENDAR_URL_KEY, calendarUrl);
+            sessionStorage.setItem(REWARD_URL_KEY,   rewardUrl);
 
             loadDashboard();
         } else {
@@ -542,12 +595,54 @@ function loadDashboard() {
     viewYear  = new Date().getFullYear();
     viewMonth = new Date().getMonth();
     loadCalendar();
+    loadReward();
+}
+
+// ════════════════════════════════════════
+// REWARD
+// ════════════════════════════════════════
+async function loadReward() {
+    const rewardUrl = sessionStorage.getItem(REWARD_URL_KEY);
+    const password  = sessionStorage.getItem(SESSION_KEY);
+    const el        = document.getElementById('rewardValue');
+
+    if (!rewardUrl || !password) return;
+
+    el.textContent = 'Loading...';
+    el.classList.add('loading');
+
+    try {
+        const response = await fetch(rewardUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+
+        const data = await response.json();
+        const body = data.body || data;
+
+        const num = parseFloat(body.reward);
+        if (isNaN(num)) {
+            el.textContent = '—';
+        } else {
+            el.textContent = num.toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+        el.classList.remove('loading');
+
+    } catch (err) {
+        el.textContent = '—';
+        el.classList.remove('loading');
+    }
 }
 
 function logout() {
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(RECORD_URL_KEY);
     sessionStorage.removeItem(CALENDAR_URL_KEY);
+    sessionStorage.removeItem(REWARD_URL_KEY);
     document.getElementById('mainContent').classList.add('hidden');
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('password').value = '';
