@@ -277,7 +277,24 @@
         }
         
         button.add-record:active { background-color: #0e6b0e; }
+        button.laundry-btn { background-color: #5bc8f5; color: #000; font-weight: bold; }
+        button.laundry-btn:active { background-color: #3ab0dc; }
+        button.vacuuming-btn { background-color: #ffe600; color: #000; font-weight: bold; }
+        button.vacuuming-btn:active { background-color: #e6cf00; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .cell-extra {
+            display: inline-block;
+            background: #107c10;
+            color: #fff;
+            font-size: 7px;
+            font-weight: bold;
+            border-radius: 3px;
+            padding: 1px 3px;
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
 
         .info {
             background: white;
@@ -472,7 +489,9 @@
 
             <!-- Controls -->
             <div class="controls">
-                <button class="add-record" id="addBtn" onclick="addKPIRecord()">➕ Add KPI Record</button>
+                <button class="add-record" id="addBtn" onclick="logEvent('AtSchool', this, '🏫 Arrived at school')">🏫 Arrived at school</button>
+                <button class="laundry-btn" onclick="logEvent('Laundry', this, '🫧 Laundry')">🫧 Laundry</button>
+                <button class="vacuuming-btn" onclick="logEvent('Vacuuming', this, '🧹 Vacuuming')">🧹 Vacuuming</button>
                 <button onclick="refreshCalendar()">🔄 Refresh</button>
                 <button onclick="logout()">🚪 Logout</button>
             </div>
@@ -650,18 +669,18 @@ function logout() {
 }
 
 // ════════════════════════════════════════
-// ADD KPI RECORD
+// LOG EVENT (AtSchool / Laundry / Vacuuming)
 // ════════════════════════════════════════
-async function addKPIRecord() {
+async function logEvent(eventtype, btn, label) {
     const password  = sessionStorage.getItem(SESSION_KEY);
     const recordUrl = sessionStorage.getItem(RECORD_URL_KEY);
     const statusDiv = document.getElementById('recordStatus');
-    const addBtn    = document.getElementById('addBtn');
 
     if (!password || !recordUrl) { logout(); return; }
 
-    addBtn.disabled = true;
-    addBtn.textContent = '⏳ Adding...';
+    btn.disabled = true;
+    const origLabel = btn.textContent;
+    btn.textContent = '⏳ Adding...';
     statusDiv.textContent = '⏳ Adding record...';
     statusDiv.className = 'info';
     statusDiv.classList.remove('hidden');
@@ -682,6 +701,7 @@ async function addKPIRecord() {
             body: JSON.stringify({
                 password,
                 timestamp: new Date().toISOString(),
+                eventtype,
                 georeference: geoString
             })
         });
@@ -689,10 +709,10 @@ async function addKPIRecord() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            statusDiv.textContent = '✓ ' + (data.message || 'Record added successfully at ' + new Date().toLocaleString());
+            statusDiv.textContent = '✓ ' + (data.message || label + ' recorded at ' + new Date().toLocaleString());
             statusDiv.className = 'success';
             setTimeout(() => statusDiv.classList.add('hidden'), 5000);
-            setTimeout(() => loadCalendar(), 1500); // refresh calendar
+            setTimeout(() => loadCalendar(), 1500);
         } else if (response.status === 401) {
             statusDiv.textContent = '✗ Authentication failed. Please login again.';
             statusDiv.className = 'error-msg';
@@ -705,8 +725,8 @@ async function addKPIRecord() {
         statusDiv.textContent = '✗ Error: ' + err.message;
         statusDiv.className = 'error-msg';
     } finally {
-        addBtn.disabled = false;
-        addBtn.textContent = '➕ Add KPI Record';
+        btn.disabled = false;
+        btn.textContent = origLabel;
     }
 }
 
@@ -814,15 +834,26 @@ function renderCalendar(records) {
         // This avoids any JavaScript timezone reinterpretation.
         const key = isoString.substring(0, 10); // "YYYY-MM-DD"
 
-        const status = classifyRecord(isoString);
+        const event = rec.cr9f1_event || 'AtSchool';
 
-        if (!dayMap[key]) {
-            dayMap[key] = { status, count: 1 };
-        } else {
-            dayMap[key].count++;
-            if (STATUS_PRIORITY[status] > STATUS_PRIORITY[dayMap[key].status]) {
-                dayMap[key].status = status;
+        if (event === 'AtSchool') {
+            const status = classifyRecord(isoString);
+            if (!dayMap[key]) {
+                dayMap[key] = { status, count: 1, extras: new Set() };
+            } else {
+                if (!dayMap[key].extras) dayMap[key].extras = new Set();
+                dayMap[key].count++;
+                if (STATUS_PRIORITY[status] > STATUS_PRIORITY[dayMap[key].status]) {
+                    dayMap[key].status = status;
+                }
             }
+        } else {
+            if (!dayMap[key]) {
+                dayMap[key] = { status: null, count: 0, extras: new Set() };
+            } else {
+                if (!dayMap[key].extras) dayMap[key].extras = new Set();
+            }
+            dayMap[key].extras.add(event);
         }
     }
 
@@ -855,7 +886,7 @@ function renderCalendar(records) {
 
         if (isFuture) {
             cell.classList.add('future-cell');
-        } else if (rec) {
+        } else if (rec && rec.status) {
             cell.classList.add(`status-${rec.status}`);
         } else {
             cell.classList.add('no-record');
@@ -869,20 +900,30 @@ function renderCalendar(records) {
         dateEl.textContent = day;
         cell.appendChild(dateEl);
 
-        // Status label (only for recorded days)
-        if (rec) {
+        // Status label (only for AtSchool days)
+        if (rec && rec.status) {
             const labelEl = document.createElement('div');
             labelEl.className = 'cell-label';
             labelEl.textContent = statusLabel(rec.status);
             cell.appendChild(labelEl);
 
-            // Record count badge (if more than 1)
+            // Record count badge (if more than 1 AtSchool record)
             if (rec.count > 1) {
                 const countEl = document.createElement('div');
                 countEl.className = 'cell-count';
                 countEl.textContent = `×${rec.count}`;
                 cell.appendChild(countEl);
             }
+        }
+
+        // Extra event badges (Laundry / Vacuuming)
+        if (rec && rec.extras && rec.extras.size > 0) {
+            rec.extras.forEach(extra => {
+                const extraEl = document.createElement('div');
+                extraEl.className = 'cell-extra';
+                extraEl.textContent = extra;
+                cell.appendChild(extraEl);
+            });
         }
 
         grid.appendChild(cell);
