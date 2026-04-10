@@ -281,6 +281,8 @@
         button.laundry-btn:active { background-color: #3ab0dc; }
         button.vacuuming-btn { background-color: #ffe600; color: #000; font-weight: bold; }
         button.vacuuming-btn:active { background-color: #e6cf00; }
+        button.floorwashing-btn { background-color: #a8d8ea; color: #000; font-weight: bold; }
+        button.floorwashing-btn:active { background-color: #89c4d8; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .cell-extra {
@@ -445,7 +447,7 @@
                 <div class="header-text">
                     <h2>George KPIs Dashboard</h2>
                     <div class="reward-box">
-                        <div class="reward-label">Reward (UAH):</div>
+                        <div class="reward-label">Reward (EUR):</div>
                         <span class="reward-value loading" id="rewardValue">Loading...</span>
                     </div>
                 </div>
@@ -492,6 +494,7 @@
                 <button class="add-record" id="addBtn" onclick="logEvent('AtSchool', this, '🏫 Arrived at school')">🏫 Arrived at school</button>
                 <button class="laundry-btn" onclick="logEvent('Laundry', this, '🫧 Laundry')">🫧 Laundry</button>
                 <button class="vacuuming-btn" onclick="logEvent('Vacuuming', this, '🧹 Vacuuming')">🧹 Vacuuming</button>
+                <button class="floorwashing-btn" onclick="logEvent('FloorWashing', this, '🫗 Floor Washing')">🫗 Floor Washing</button>
                 <button onclick="refreshCalendar()">🔄 Refresh</button>
                 <button onclick="logout()">🚪 Logout</button>
             </div>
@@ -669,7 +672,7 @@ function logout() {
 }
 
 // ════════════════════════════════════════
-// LOG EVENT (AtSchool / Laundry / Vacuuming)
+// LOG EVENT (AtSchool / Laundry / Vacuuming / FloorWashing)
 // ════════════════════════════════════════
 async function logEvent(eventtype, btn, label) {
     const password  = sessionStorage.getItem(SESSION_KEY);
@@ -916,7 +919,7 @@ function renderCalendar(records) {
             }
         }
 
-        // Extra event badges (Laundry / Vacuuming)
+        // Extra event badges (Laundry / Vacuuming / FloorWashing)
         if (rec && rec.extras && rec.extras.size > 0) {
             rec.extras.forEach(extra => {
                 const extraEl = document.createElement('div');
