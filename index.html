@@ -73,6 +73,7 @@
         
         .container {
             padding: 10px;
+            overflow-x: hidden;
         }
 
         /* ── CALENDAR ── */
@@ -82,6 +83,8 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 16px;
             margin-bottom: 15px;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         .calendar-header {
@@ -118,8 +121,9 @@
         .weekday-row {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            margin-bottom: 4px;
+            gap: 3px;
+            margin-bottom: 3px;
+            width: 100%;
         }
 
         .weekday-header {
@@ -135,7 +139,9 @@
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+            gap: 3px;
+            width: 100%;
+            min-width: 0;
         }
 
         .day-cell {
@@ -145,10 +151,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 4px 2px;
+            padding: 2px 1px;
             position: relative;
-            min-height: 56px;
+            min-height: 0;
             border: 1px solid transparent;
+            overflow: hidden;
+            min-width: 0;
         }
 
         .day-cell.empty-slot {
@@ -189,7 +197,7 @@
         .future-cell   .cell-date { color: #ccc; }
 
         .cell-label {
-            font-size: 7.5px;
+            font-size: 9px;
             text-align: center;
             line-height: 1.25;
             text-transform: uppercase;
@@ -273,23 +281,76 @@
         
         button.add-record {
             background-color: #107c10;
-            font-weight: bold;
+            font-weight: normal;
         }
         
         button.add-record:active { background-color: #0e6b0e; }
-        button.laundry-btn { background-color: #5bc8f5; color: #000; font-weight: bold; }
+        button.laundry-btn { background-color: #5bc8f5; color: #000; font-weight: normal; }
         button.laundry-btn:active { background-color: #3ab0dc; }
-        button.vacuuming-btn { background-color: #ffe600; color: #000; font-weight: bold; }
+        button.vacuuming-btn { background-color: #ffe600; color: #000; font-weight: normal; }
         button.vacuuming-btn:active { background-color: #e6cf00; }
-        button.floorwashing-btn { background-color: #a8d8ea; color: #000; font-weight: bold; }
+        button.floorwashing-btn { background-color: #a8d8ea; color: #000; font-weight: normal; }
         button.floorwashing-btn:active { background-color: #89c4d8; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Payment box */
+        .payment-box {
+            display: inline-block;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 8px;
+            padding: 8px 14px;
+            margin-left: 10px;
+            vertical-align: top;
+        }
+
+        .payment-label {
+            font-size: 11px;
+            opacity: 0.85;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .payment-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .payment-input {
+            width: 80px;
+            padding: 4px 6px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .payment-input::placeholder { color: rgba(255,255,255,0.5); }
+
+        .payment-btn {
+            padding: 5px 12px !important;
+            font-size: 13px !important;
+            background: rgba(255,255,255,0.25) !important;
+            color: #fff !important;
+            border: 1px solid rgba(255,255,255,0.5) !important;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: normal !important;
+            margin: 0 !important;
+        }
+
+        .payment-btn:active { background: rgba(255,255,255,0.4) !important; }
+        .payment-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .cell-extra {
             display: inline-block;
             background: #107c10;
             color: #fff;
-            font-size: 7px;
+            font-size: 9px;
             font-weight: bold;
             border-radius: 3px;
             padding: 1px 3px;
@@ -446,9 +507,18 @@
                 <img id="headerImage" src="evolution2.png" alt="Logo">
                 <div class="header-text">
                     <h2>George KPIs Dashboard</h2>
-                    <div class="reward-box">
-                        <div class="reward-label">Reward (EUR):</div>
-                        <span class="reward-value loading" id="rewardValue">Loading...</span>
+                    <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                        <div class="reward-box">
+                            <div class="reward-label">Reward (EUR):</div>
+                            <span class="reward-value loading" id="rewardValue">Loading...</span>
+                        </div>
+                        <div class="payment-box">
+                            <div class="payment-label">Payment (EUR):</div>
+                            <div class="payment-controls">
+                                <input class="payment-input" type="number" id="paymentInput" min="0" step="0.01" value="0" oninput="updatePaymentBtn()">
+                                <button class="payment-btn" id="paymentBtn" onclick="submitPayment()" disabled>Pay</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -482,16 +552,16 @@
                 </div>
 
                 <div class="legend">
-                    <div class="legend-item"><div class="legend-dot green"></div> On time for breakfast (before 08:10)</div>
-                    <div class="legend-item"><div class="legend-dot yellow"></div> On time for 1st lesson (08:10–08:30)</div>
-                    <div class="legend-item"><div class="legend-dot red"></div> Late (after 08:30)</div>
+                    <div class="legend-item"><div class="legend-dot green"></div> On time for Homeroom (before 08:26)</div>
+                    <div class="legend-item"><div class="legend-dot yellow"></div> On time for 1st lesson (08:10–08:35)</div>
+                    <div class="legend-item"><div class="legend-dot red"></div> Late (after 08:35)</div>
                     <div class="legend-item"><div class="legend-dot empty"></div> No record</div>
                 </div>
             </div>
 
             <!-- Controls -->
             <div class="controls">
-                <button class="add-record" id="addBtn" onclick="logEvent('AtSchool', this, '🏫 Arrived at school')">🏫 Arrived at school</button>
+                <button class="add-record" id="addBtn" onclick="logEvent('AtSchool', this, '🏫 School')">🏫 School</button>
                 <button class="laundry-btn" onclick="logEvent('Laundry', this, '🫧 Laundry')">🫧 Laundry</button>
                 <button class="vacuuming-btn" onclick="logEvent('Vacuuming', this, '🧹 Vacuuming')">🧹 Vacuuming</button>
                 <button class="floorwashing-btn" onclick="logEvent('FloorWashing', this, '🫗 Floor Washing')">🫗 Floor Washing</button>
@@ -521,8 +591,8 @@ const CALENDAR_URL_KEY = 'kpi_calendar_url';
 const REWARD_URL_KEY   = 'kpi_reward_url';
 
 // Time thresholds matching your Tech sheet (B1=08:25 Breakfast, B2=08:35 Lessons)
-const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 25;   // 490
-const LESSONS_CUTOFF_MINUTES   = 8 * 60 + 35;   // 510
+const BREAKFAST_CUTOFF_MINUTES = 8 * 60 + 26;   // 490
+const LESSONS_CUTOFF_MINUTES   = 8 * 60 + 36;   // 510
 
 // Calendar navigation state
 let viewYear  = new Date().getFullYear();
@@ -817,7 +887,7 @@ function classifyRecord(isoString) {
 }
 
 function statusLabel(status) {
-    if (status === 'green')  return 'On time\nBreakfast';
+    if (status === 'green')  return 'On time\nHomeroom';
     if (status === 'yellow') return 'On time\n1st Lesson';
     if (status === 'red')    return 'Late';
     return '';
@@ -930,6 +1000,69 @@ function renderCalendar(records) {
         }
 
         grid.appendChild(cell);
+    }
+}
+// ════════════════════════════════════════
+// PAYMENT
+// ════════════════════════════════════════
+function updatePaymentBtn() {
+    const val = parseFloat(document.getElementById('paymentInput').value);
+    document.getElementById('paymentBtn').disabled = !(val > 0);
+}
+
+async function submitPayment() {
+    const input   = document.getElementById('paymentInput');
+    const btn     = document.getElementById('paymentBtn');
+    const password  = sessionStorage.getItem(SESSION_KEY);
+    const recordUrl = sessionStorage.getItem(RECORD_URL_KEY);
+    const statusDiv = document.getElementById('recordStatus');
+
+    if (!password || !recordUrl) { logout(); return; }
+
+    const amount = parseFloat(input.value);
+    if (!(amount > 0)) return;
+
+    btn.disabled = true;
+    const origLabel = btn.textContent;
+    btn.textContent = '⏳';
+    statusDiv.textContent = '⏳ Submitting payment...';
+    statusDiv.className = 'info';
+    statusDiv.classList.remove('hidden');
+
+    try {
+        const response = await fetch(recordUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                password,
+                timestamp: new Date().toISOString(),
+                eventtype: 'PaymentEUR',
+                georeference: amount.toString()
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            statusDiv.textContent = '✓ Payment of ' + amount.toFixed(2) + ' EUR recorded';
+            statusDiv.className = 'success';
+            input.value = '0';
+            updatePaymentBtn();
+            setTimeout(() => statusDiv.classList.add('hidden'), 5000);
+        } else if (response.status === 401) {
+            statusDiv.textContent = '✗ Authentication failed. Please login again.';
+            statusDiv.className = 'error-msg';
+            setTimeout(() => logout(), 2000);
+        } else {
+            statusDiv.textContent = '✗ ' + (data.message || 'Failed to submit payment');
+            statusDiv.className = 'error-msg';
+        }
+    } catch (err) {
+        statusDiv.textContent = '✗ Error: ' + err.message;
+        statusDiv.className = 'error-msg';
+    } finally {
+        btn.disabled = !(parseFloat(input.value) > 0);
+        btn.textContent = origLabel;
     }
 }
 </script>
