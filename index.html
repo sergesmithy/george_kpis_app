@@ -80,6 +80,7 @@
         
         .container {
             padding: 10px;
+            overflow-x: hidden;
         }
 
         /* ── CALENDAR ── */
@@ -89,6 +90,16 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 16px;
             margin-bottom: 15px;
+            box-sizing: border-box;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        @media (max-width: 400px) {
+            .calendar-wrapper { padding: 6px; }
+            .calendar-header h3 { font-size: 15px; }
+            .cal-nav button { padding: 4px 8px; font-size: 12px; }
+            .weekday-header { font-size: 9px; letter-spacing: 0; }
         }
 
         .calendar-header {
@@ -127,6 +138,7 @@
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
             margin-bottom: 4px;
+            width: 100%;
         }
 
         .weekday-header {
@@ -143,18 +155,20 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
+            width: 100%;
         }
 
         .day-cell {
-            aspect-ratio: 1;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             padding: 4px 2px;
             position: relative;
-            min-height: 56px;
+            min-height: 0;
+            min-width: 0;
+            overflow: hidden;
             border: 1px solid transparent;
         }
 
@@ -189,6 +203,10 @@
             margin-bottom: 3px;
         }
 
+        @media (max-width: 400px) {
+            .cell-date { font-size: 12px; margin-bottom: 1px; }
+        }
+
         .status-green  .cell-date { color: #006100; }
         .status-yellow .cell-date { color: #9C5700; }
         .status-red    .cell-date { color: #9C0006; }
@@ -202,6 +220,10 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
             white-space: pre;
+        }
+
+        @media (max-width: 400px) {
+            .cell-label { font-size: 5.5px; letter-spacing: 0; }
         }
 
         .status-green  .cell-label { color: #006100; }
@@ -348,7 +370,7 @@
         .payment-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .cell-extra {
-            display: inline-block;
+            display: block;
             background: #107c10;
             color: #fff;
             font-size: 7px;
@@ -358,6 +380,16 @@
             margin-top: 2px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 400px) {
+            .cell-extra { font-size: 5px; padding: 1px 1px; letter-spacing: 0; }
         }
 
         .info {
@@ -921,7 +953,10 @@ function renderCalendar(records) {
             } else {
                 if (!dayMap[key].extras) dayMap[key].extras = new Set();
                 dayMap[key].count++;
-                if (STATUS_PRIORITY[status] > STATUS_PRIORITY[dayMap[key].status]) {
+                // Set status if none yet (entry was created by a non-AtSchool event),
+                // or upgrade if this record is worse than the current status
+                if (dayMap[key].status === null ||
+                    STATUS_PRIORITY[status] > STATUS_PRIORITY[dayMap[key].status]) {
                     dayMap[key].status = status;
                     dayMap[key].timeStr = timeStr;
                 }
@@ -1050,10 +1085,14 @@ async function submitPayment() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            statusDiv.textContent = '✓ Payment of ' + amount + ' EUR recorded';
+            statusDiv.textContent = '✓ Payment of ' + amount + ' EUR recorded — refreshing reward...';
             statusDiv.className = 'success';
             input.value = '0';
+            // Keep Pay button disabled until reward refresh completes
+            btn.textContent = '⏳';
+            await loadReward();
             updatePaymentBtn();
+            statusDiv.textContent = '✓ Payment of ' + amount + ' EUR recorded';
             setTimeout(() => statusDiv.classList.add('hidden'), 5000);
         } else if (response.status === 401) {
             statusDiv.textContent = '✗ Authentication failed. Please login again.';
@@ -1067,8 +1106,9 @@ async function submitPayment() {
         statusDiv.textContent = '✗ Error: ' + err.message;
         statusDiv.className = 'error-msg';
     } finally {
-        btn.disabled = !(parseInt(input.value, 10) > 0);
         btn.textContent = origLabel;
+        // updatePaymentBtn() already called in success path; call here for error path
+        if (parseInt(input.value, 10) <= 0) btn.disabled = true;
     }
 }
 </script>
